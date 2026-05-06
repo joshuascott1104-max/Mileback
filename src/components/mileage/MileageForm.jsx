@@ -189,13 +189,13 @@ export default function MileageForm() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label-base">Miles</label>
-            <input type="number" className="input-base" placeholder="0.0" value={form.miles}
-              onChange={e => set('miles', e.target.value)} step="0.1" min="0" />
+            <input type="text" inputMode="decimal" className="input-base" placeholder="0.0" value={form.miles}
+              onChange={e => set('miles', e.target.value)} />
           </div>
           <div>
             <label className="label-base">Rate (£/mile)</label>
-            <input type="number" className="input-base" placeholder="0.45" value={form.rate}
-              onChange={e => set('rate', e.target.value)} step="0.01" min="0" />
+            <input type="text" inputMode="decimal" className="input-base" placeholder="0.45" value={form.rate}
+              onChange={e => set('rate', e.target.value)} />
           </div>
         </div>
 
@@ -210,9 +210,9 @@ export default function MileageForm() {
           </div>
           <button
             onClick={() => set('returnJourney', !form.returnJourney)}
-            className={`w-11 h-6 rounded-full transition-colors relative ${form.returnJourney ? 'bg-brand-500' : 'bg-surface-700'}`}
+            className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${form.returnJourney ? 'bg-brand-500' : 'bg-surface-700'}`}
           >
-            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.returnJourney ? 'translate-x-5.5 left-0.5' : 'left-0.5'}`} />
+            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${form.returnJourney ? 'left-[22px]' : 'left-0.5'}`} />
           </button>
         </div>
 

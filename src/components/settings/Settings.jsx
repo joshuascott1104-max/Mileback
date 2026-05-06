@@ -25,6 +25,7 @@ export default function Settings() {
   const [showAddVehicle, setShowAddVehicle] = useState(false)
   const [newVehicle, setNewVehicle] = useState({ name: '', registration: '', defaultRate: '' })
   const [saved, setSaved] = useState(false)
+  const [rateInput, setRateInput] = useState(String(settings.standardRate ?? 0.45))
 
   const handleSave = () => {
     setSaved(true)
@@ -59,9 +60,17 @@ export default function Settings() {
       {/* Mileage */}
       <Section title="Mileage">
         <Row label="Standard rate (£/mile)">
-          <input type="number" className="input-base max-w-[120px] text-right" step="0.01" min="0"
-            value={settings.standardRate || 0.45}
-            onChange={e => setSettings(s => ({ ...s, standardRate: Number(e.target.value) }))}
+          <input type="text" inputMode="decimal" className="input-base max-w-[120px] text-right"
+            value={rateInput}
+            onChange={e => {
+              setRateInput(e.target.value)
+              const num = parseFloat(e.target.value)
+              if (!isNaN(num) && num >= 0) setSettings(s => ({ ...s, standardRate: num }))
+            }}
+            onBlur={() => {
+              const num = parseFloat(rateInput)
+              if (isNaN(num) || num < 0) setRateInput(String(settings.standardRate ?? 0.45))
+            }}
           />
         </Row>
         <div className="p-4">
