@@ -22,8 +22,13 @@ export default function BottomNav() {
               `flex-1 flex flex-col items-center justify-center gap-1 py-3 transition-colors ${isActive ? 'text-brand-400' : 'text-surface-500'}`
             }
           >
-            <Icon size={20} />
-            <span className="text-[10px] font-medium">{label}</span>
+            {({ isActive }) => (
+              <>
+                <Icon size={20} />
+                <span className="text-[10px] font-medium">{label}</span>
+                <span className={`w-1 h-1 rounded-full transition-opacity ${isActive ? 'bg-brand-400 opacity-100' : 'opacity-0'}`} />
+              </>
+            )}
           </NavLink>
         ))}
       </div>

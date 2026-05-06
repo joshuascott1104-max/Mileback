@@ -34,6 +34,7 @@ export default function MileageForm() {
   const [calculating, setCalculating] = useState(false)
   const [calcError, setCalcError] = useState('')
   const [addAnother, setAddAnother] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // Pre-fill defaults for new claims
   useEffect(() => {
@@ -100,7 +101,11 @@ export default function MileageForm() {
   }
 
   const handleSubmit = (andAnother = false) => {
-    if (!form.miles || !form.rate) return
+    if (!form.miles || !form.rate) {
+      setSaveError('Enter miles and rate to save')
+      setTimeout(() => setSaveError(''), 3000)
+      return
+    }
     const claim = {
       ...form,
       miles: Number(form.miles),
@@ -281,6 +286,7 @@ export default function MileageForm() {
 
       {/* Footer */}
       <div className="fixed bottom-16 left-0 right-0 bg-surface-950/95 backdrop-blur border-t border-surface-800 p-4 space-y-2 z-50">
+        {saveError && <p className="text-xs text-red-400 text-center">{saveError}</p>}
         {form.miles && form.rate && (
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-surface-400">Claim total</span>

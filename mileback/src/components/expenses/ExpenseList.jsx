@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Receipt, Camera, X, CheckCircle2, Trash2 } from 'lucide-react'
+import { Plus, Receipt, Camera, X, CheckCircle2, Trash2, Search } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
-import { formatCurrency, formatDate } from '../../utils/formatters'
+import { formatCurrency, formatRelativeDate } from '../../utils/formatters'
 import StatusBadge from '../ui/StatusBadge'
 import EmptyState from '../ui/EmptyState'
 
@@ -15,11 +15,17 @@ export default function ExpenseList() {
   const [submitted, setSubmitted] = useState(false)
   const [swipedId, setSwipedId] = useState(null)
   const [undoItem, setUndoItem] = useState(null)
+  const [search, setSearch] = useState('')
   const touchStartX = useRef(0)
   const undoTimer = useRef(null)
 
   const drafts = expenses.filter(e => e.status === 'draft')
-  const totalValue = expenses.reduce((s, e) => s + (e.amount || 0), 0)
+  const filtered = expenses.filter(e => {
+    if (!search) return true
+    const q = search.toLowerCase()
+    return `${e.description} ${e.supplier} ${e.category}`.toLowerCase().includes(q)
+  })
+  const totalValue = filtered.reduce((s, e) => s + (e.amount || 0), 0)
 
   const submitAllDrafts = () => {
     drafts.forEach(e => updateExpense(e.id, { status: 'submitted' }))
@@ -63,13 +69,36 @@ export default function ExpenseList() {
         </div>
       </div>
 
+      {/* Search — shown when list is non-trivial */}
+      {expenses.length > 5 && (
+        <div className="px-4 mb-3">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+            <input
+              className="input-base pl-9 pr-8"
+              placeholder="Search expenses…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400">
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {expenses.length === 0 ? (
         <EmptyState icon={Receipt} title="No expenses" description="Start logging your business expenses"
           action={<button onClick={() => navigate('/expenses/add')} className="btn-primary">Add first expense</button>} />
       ) : (
         <>
+          {filtered.length === 0 && search && (
+            <p className="text-center text-surface-400 text-sm py-12">No expenses match your search</p>
+          )}
           <div className="px-4 card divide-y divide-surface-800">
-            {expenses.map(exp => (
+            {filtered.map(exp => (
               <div key={exp.id} className="relative overflow-hidden">
                 <div className="absolute inset-y-0 right-0 w-20 bg-red-500 flex items-center justify-center">
                   <button onClick={() => handleDelete(exp)} className="text-white p-2 active:opacity-70">
@@ -92,7 +121,7 @@ export default function ExpenseList() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{exp.description || exp.supplier}</p>
-                    <p className="text-xs text-surface-400">{formatDate(exp.date)} · {exp.category}{exp.supplier ? ` · ${exp.supplier}` : ''}</p>
+                    <p className="text-xs text-surface-400">{formatRelativeDate(exp.date)} · {exp.category}</p>
                   </div>
                   <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
                     <div className="flex items-center gap-1.5">
@@ -118,7 +147,7 @@ export default function ExpenseList() {
 
           {/* List total */}
           <div className="px-4 mt-3 flex items-center justify-between card p-3">
-            <p className="text-xs text-surface-400">{expenses.length} expense{expenses.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-surface-400">{filtered.length} expense{filtered.length !== 1 ? 's' : ''}</p>
             <p className="text-sm font-semibold text-white">{formatCurrency(totalValue)}</p>
           </div>
         </>

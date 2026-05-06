@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Car, Copy, CheckCircle2, Trash2, Search, X } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
-import { formatCurrency, formatDate, formatMiles } from '../../utils/formatters'
+import { formatCurrency, formatRelativeDate, formatMiles } from '../../utils/formatters'
 import StatusBadge from '../ui/StatusBadge'
 import EmptyState from '../ui/EmptyState'
 
@@ -141,7 +141,7 @@ export default function MileageList() {
                       {claim.reason || `${claim.startPostcode} → ${claim.endPostcode}`}
                     </p>
                     <p className="text-xs text-surface-400">
-                      {formatDate(claim.date)} · {formatMiles(claim.returnJourney ? claim.miles * 2 : claim.miles)}
+                      {formatRelativeDate(claim.date)} · {formatMiles(claim.returnJourney ? claim.miles * 2 : claim.miles)}
                       {claim.vehicleName ? ` · ${claim.vehicleName}` : ''}
                     </p>
                   </div>

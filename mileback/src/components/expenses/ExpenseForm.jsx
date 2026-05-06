@@ -27,7 +27,6 @@ const empty = () => ({
   supplier: '',
   description: '',
   amount: '',
-  vat: '',
   notes: '',
   receiptImage: '',
   status: 'draft',
@@ -39,6 +38,7 @@ export default function ExpenseForm() {
   const { expenses, addExpense, updateExpense, deleteExpense, settings, setSettings } = useApp()
   const existing = id ? expenses.find(e => e.id === id) : null
   const [form, setForm] = useState(existing || { ...empty(), category: settings.lastExpenseCategory || 'Parking' })
+  const [saveError, setSaveError] = useState('')
   const fileRef = useRef(null)
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
@@ -52,8 +52,12 @@ export default function ExpenseForm() {
   }
 
   const handleSubmit = () => {
-    if (!form.amount) return
-    const expense = { ...form, amount: Number(form.amount), vat: Number(form.vat || 0) }
+    if (!form.amount) {
+      setSaveError('Enter an amount to save')
+      setTimeout(() => setSaveError(''), 3000)
+      return
+    }
+    const expense = { ...form, amount: Number(form.amount) }
     if (existing) {
       updateExpense(id, expense)
     } else {
@@ -93,28 +97,16 @@ export default function ExpenseForm() {
         </div>
 
         <div>
-          <label className="label-base">Supplier / Merchant</label>
-          <input className="input-base" placeholder="e.g. NCP, Costa Coffee" value={form.supplier}
-            onChange={e => set('supplier', e.target.value)} />
-        </div>
-
-        <div>
-          <label className="label-base">Description</label>
-          <input className="input-base" placeholder="Brief description" value={form.description}
+          <label className="label-base">Description / Supplier</label>
+          <input className="input-base" placeholder="e.g. NCP Leeds, city centre parking" value={form.description}
             onChange={e => set('description', e.target.value)} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label-base">Amount (£)</label>
-            <input type="text" inputMode="decimal" className="input-base" placeholder="0.00" value={form.amount}
-              onChange={e => set('amount', e.target.value)} />
-          </div>
-          <div>
-            <label className="label-base">VAT (£) optional</label>
-            <input type="text" inputMode="decimal" className="input-base" placeholder="0.00" value={form.vat}
-              onChange={e => set('vat', e.target.value)} />
-          </div>
+        <div>
+          <label className="label-base">Amount (£)</label>
+          <input type="text" inputMode="decimal" className={`input-base ${saveError ? 'border-red-500' : ''}`} placeholder="0.00" value={form.amount}
+            onChange={e => { set('amount', e.target.value); if (saveError) setSaveError('') }} />
+          {saveError && <p className="text-xs text-red-400 mt-1">{saveError}</p>}
         </div>
 
         {/* Receipt photo */}

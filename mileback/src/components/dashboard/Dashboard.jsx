@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Car, Receipt, Download, ArrowRight, Plus, CheckCircle2, RotateCcw, ShieldAlert } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
-import { formatCurrency, formatDate, getFinancialSummary, calcMileageTotal, EXPENSE_CATEGORIES } from '../../utils/formatters'
+import { formatCurrency, formatRelativeDate, getFinancialSummary, calcMileageTotal, EXPENSE_CATEGORIES } from '../../utils/formatters'
 import { exportBackup } from '../../services/backupService'
 import StatusBadge from '../ui/StatusBadge'
 import { format, differenceInDays, parseISO } from 'date-fns'
@@ -304,15 +304,15 @@ export default function Dashboard() {
       <div className="px-4 grid grid-cols-3 gap-3 mb-4">
         <button onClick={() => navigate('/mileage/add')} className="card p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-all hover:border-brand-500/50">
           <div className="w-9 h-9 bg-brand-500/20 rounded-xl flex items-center justify-center"><Car size={16} className="text-brand-400" /></div>
-          <span className="text-xs font-medium text-white text-center">Full Form</span>
+          <span className="text-xs font-medium text-white text-center">Add Mileage</span>
         </button>
         <button onClick={() => navigate('/expenses/add')} className="card p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-all hover:border-brand-500/50">
           <div className="w-9 h-9 bg-emerald-500/20 rounded-xl flex items-center justify-center"><Receipt size={16} className="text-emerald-400" /></div>
-          <span className="text-xs font-medium text-white text-center">Full Form</span>
+          <span className="text-xs font-medium text-white text-center">Add Expense</span>
         </button>
         <button onClick={() => navigate('/reports')} className="card p-3 flex flex-col items-center gap-1.5 active:scale-95 transition-all hover:border-brand-500/50">
           <div className="w-9 h-9 bg-amber-500/20 rounded-xl flex items-center justify-center"><Download size={16} className="text-amber-400" /></div>
-          <span className="text-xs font-medium text-white text-center">Export</span>
+          <span className="text-xs font-medium text-white text-center">Reports</span>
         </button>
       </div>
 
@@ -340,7 +340,7 @@ export default function Dashboard() {
                 <p className="text-sm font-medium text-white truncate">
                   {item.type === 'mileage' ? (item.reason || `${item.startPostcode} → ${item.endPostcode}`) : (item.description || item.supplier)}
                 </p>
-                <p className="text-xs text-surface-400">{formatDate(item.date)}</p>
+                <p className="text-xs text-surface-400">{formatRelativeDate(item.date)}</p>
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-sm font-semibold text-white">

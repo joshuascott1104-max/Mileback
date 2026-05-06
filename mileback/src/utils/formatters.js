@@ -1,4 +1,4 @@
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns'
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, differenceInDays } from 'date-fns'
 
 export const formatCurrency = (amount) =>
   `£${Number(amount || 0).toFixed(2)}`
@@ -50,9 +50,22 @@ export const getFinancialSummary = (mileageClaims, expenses) => {
   return { owed: draft + submitted, draft, submitted, paid }
 }
 
+export const STATUS_LABELS = {
   draft: 'Draft',
   submitted: 'Submitted',
   paid: 'Paid',
+}
+
+export const formatRelativeDate = (dateStr) => {
+  try {
+    const days = differenceInDays(new Date(), parseISO(dateStr))
+    if (days === 0) return 'Today'
+    if (days === 1) return 'Yesterday'
+    if (days <= 7) return `${days} days ago`
+    return formatDate(dateStr)
+  } catch {
+    return dateStr
+  }
 }
 
 export const EXPENSE_CATEGORIES = [
