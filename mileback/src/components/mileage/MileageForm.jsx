@@ -197,20 +197,12 @@ export default function MileageForm() {
         {/* Postcodes — optional for reference */}
         <div>
           <p className="label-base mb-2">Journey Locations (optional)</p>
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <input className="input-base" placeholder="Start postcode" value={form.startPostcode}
-                onChange={e => set('startPostcode', e.target.value.toUpperCase())} />
-              <input className="input-base" placeholder="Start location" value={form.startLocationName}
-                onChange={e => set('startLocationName', e.target.value)} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input className="input-base" placeholder="End postcode" value={form.endPostcode}
-                onChange={e => set('endPostcode', e.target.value.toUpperCase())}
-                onBlur={() => { if (form.startPostcode && form.endPostcode && !form.miles) handleCalculate() }} />
-              <input className="input-base" placeholder="End location" value={form.endLocationName}
-                onChange={e => set('endLocationName', e.target.value)} />
-            </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input className="input-base" placeholder="Start postcode" value={form.startPostcode}
+              onChange={e => set('startPostcode', e.target.value.toUpperCase())} />
+            <input className="input-base" placeholder="End postcode" value={form.endPostcode}
+              onChange={e => set('endPostcode', e.target.value.toUpperCase())}
+              onBlur={() => { if (form.startPostcode && form.endPostcode && !form.miles) handleCalculate() }} />
           </div>
           {!usingOdometer && form.startPostcode && form.endPostcode && (
             <button
