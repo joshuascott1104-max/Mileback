@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Car, Receipt, Download, ArrowRight, Plus, CheckCircle2, RotateCcw, ShieldAlert } from 'lucide-react'
+import { Car, Receipt, Download, ArrowRight, Plus, CheckCircle2, RotateCcw, ShieldAlert, FileText } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
 import { formatCurrency, formatRelativeDate, getFinancialSummary, calcMileageTotal, EXPENSE_CATEGORIES } from '../../utils/formatters'
 import { exportBackup } from '../../services/backupService'
@@ -195,6 +195,13 @@ export default function Dashboard() {
     : null
   const showBackupBanner = (daysSinceBackup === null && mileageClaims.length > 3) || daysSinceBackup >= 7
 
+  const allDrafts = [
+    ...mileageClaims.filter(c => c.status === 'draft'),
+    ...expenses.filter(e => e.status === 'draft'),
+  ]
+  const staleDrafts = allDrafts.filter(item => differenceInDays(new Date(), parseISO(item.date)) >= 3)
+  const showDraftNudge = staleDrafts.length >= 2
+
   const handleBackupNow = () => {
     exportBackup({ mileageClaims, expenses, vehicles, settings, favouriteJourneys })
     setSettings(s => ({ ...s, lastManualBackupDate: new Date().toISOString().split('T')[0] }))
@@ -235,6 +242,25 @@ export default function Dashboard() {
               <p className="text-xs text-amber-400/70">Tap to download backup now</p>
             </div>
             <Download size={14} className="text-amber-400 flex-shrink-0" />
+          </button>
+        </div>
+      )}
+
+      {/* Draft nudge */}
+      {showDraftNudge && (
+        <div className="px-4 mb-3">
+          <button
+            onClick={() => navigate('/reports')}
+            className="w-full flex items-center gap-3 bg-brand-500/10 border border-brand-500/30 rounded-2xl px-4 py-3 active:scale-[0.99] transition-all"
+          >
+            <FileText size={16} className="text-brand-400 flex-shrink-0" />
+            <div className="flex-1 text-left">
+              <p className="text-xs font-semibold text-brand-400">
+                {staleDrafts.length} draft{staleDrafts.length !== 1 ? 's' : ''} ready to submit
+              </p>
+              <p className="text-xs text-brand-400/70">Tap to review and export</p>
+            </div>
+            <ArrowRight size={14} className="text-brand-400 flex-shrink-0" />
           </button>
         </div>
       )}

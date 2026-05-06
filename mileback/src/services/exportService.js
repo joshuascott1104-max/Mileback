@@ -15,8 +15,7 @@ function buildRows(mileageClaims, expenses) {
       Rate: `£${c.rate}`,
       'Mileage Total': `£${c.total.toFixed(2)}`,
       'Expense Category': '',
-      Supplier: '',
-      VAT: '',
+      Description: '',
       'Expense Total': '',
       Notes: c.notes || '',
       Status: c.status,
@@ -30,13 +29,12 @@ function buildRows(mileageClaims, expenses) {
       Vehicle: '',
       'Start Postcode': '',
       'End Postcode': '',
-      'Reason / Customer': e.description,
+      'Reason / Customer': '',
       Miles: '',
       Rate: '',
       'Mileage Total': '',
       'Expense Category': e.category,
-      Supplier: e.supplier,
-      VAT: e.vat ? `£${e.vat.toFixed(2)}` : '',
+      Description: e.description || e.supplier || '',
       'Expense Total': `£${e.amount.toFixed(2)}`,
       Notes: e.notes || '',
       Status: e.status,
@@ -60,7 +58,8 @@ export function exportToCSV(mileageClaims, expenses, filename = 'mileback-export
 
 export function copyToClipboard(mileageClaims, expenses) {
   const rows = buildRows(mileageClaims, expenses)
-  const headers = Object.keys(rows[0] || {})
+  if (rows.length === 0) return Promise.resolve()
+  const headers = Object.keys(rows[0])
   const lines = [
     headers.join('\t'),
     ...rows.map(r => headers.map(h => r[h] ?? '').join('\t'))

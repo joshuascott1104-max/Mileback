@@ -117,7 +117,9 @@ export default function Settings() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white">{v.name}</p>
-                <p className="text-xs text-surface-400">{v.registration || 'No reg'}</p>
+                <p className="text-xs text-surface-400">
+                  {v.registration || 'No reg'} · {v.defaultRate ? `£${Number(v.defaultRate).toFixed(2)}/mi` : `£${settings.standardRate}/mi`}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 {v.isDefault && <span className="text-xs text-brand-400 font-medium">Default</span>}
@@ -161,7 +163,9 @@ export default function Settings() {
                 <Star size={14} className="text-amber-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white">{j.name}</p>
-                  <p className="text-xs text-surface-400">{j.startPostcode} → {j.endPostcode}</p>
+                  <p className="text-xs text-surface-400">
+                    {j.startName || j.startPostcode} → {j.endName || j.endPostcode}
+                  </p>
                 </div>
                 <button onClick={() => deleteFavouriteJourney(j.id)} className="p-1 text-surface-600 hover:text-red-400 transition-colors">
                   <Trash2 size={14} />

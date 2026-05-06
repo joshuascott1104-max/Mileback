@@ -1,14 +1,22 @@
 import { useState } from 'react'
-import { Download, Clipboard, ClipboardCheck, Filter } from 'lucide-react'
+import { Download, Clipboard, ClipboardCheck, CheckCircle2 } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
 import { formatCurrency, formatDate, formatMiles } from '../../utils/formatters'
 import { exportToCSV, copyToClipboard } from '../../services/exportService'
 import StatusBadge from '../ui/StatusBadge'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths } from 'date-fns'
 
+const taxYearLabel = (() => {
+  const today = new Date()
+  const y = today.getMonth() > 3 || (today.getMonth() === 3 && today.getDate() >= 6) ? today.getFullYear() : today.getFullYear() - 1
+  return `${String(y).slice(2)}/${String(y + 1).slice(2)}`
+})()
+
 export default function Reports() {
   const { mileageClaims, expenses } = useApp()
   const [copied, setCopied] = useState(false)
+  const [csvExported, setCsvExported] = useState(false)
+  const [activePeriod, setActivePeriod] = useState('month')
   const [filters, setFilters] = useState({
     dateFrom: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
     dateTo: format(new Date(), 'yyyy-MM-dd'),
@@ -16,10 +24,14 @@ export default function Reports() {
     type: 'all',
   })
 
-  const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: v }))
+  const setFilter = (k, v) => {
+    setFilters(f => ({ ...f, [k]: v }))
+    if (k === 'dateFrom' || k === 'dateTo') setActivePeriod(null)
+  }
 
   const setPeriod = (type) => {
     const today = new Date()
+    setActivePeriod(type)
     if (type === 'week') {
       setFilters(f => ({ ...f, dateFrom: format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd'), dateTo: format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd') }))
     } else if (type === 'month') {
@@ -59,6 +71,20 @@ export default function Reports() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleExport = () => {
+    const filename = `mileback-${filters.dateFrom}-to-${filters.dateTo}`
+    exportToCSV(filteredMileage, filteredExpenses, filename)
+    setCsvExported(true)
+    setTimeout(() => setCsvExported(false), 2000)
+  }
+
+  const periods = [
+    ['week', 'This week'],
+    ['month', 'This month'],
+    ['lastmonth', 'Last month'],
+    ['taxyear', `Tax year ${taxYearLabel}`],
+  ]
+
   return (
     <div className="pb-24">
       <div className="px-4 pt-6 pb-4">
@@ -69,9 +95,13 @@ export default function Reports() {
       <div className="px-4 mb-4">
         <div className="card p-4 space-y-3">
           <div className="flex gap-2 flex-wrap">
-            {[['week', 'This week'], ['month', 'This month'], ['lastmonth', 'Last month'], ['taxyear', 'Tax year']].map(([key, label]) => (
+            {periods.map(([key, label]) => (
               <button key={key} onClick={() => setPeriod(key)}
-                className="flex-1 bg-surface-800 border border-surface-700 rounded-xl py-2 text-xs font-medium text-surface-300 hover:text-white hover:border-surface-600 active:scale-95 transition-all whitespace-nowrap">
+                className={`flex-1 border rounded-xl py-2 text-xs font-medium active:scale-95 transition-all whitespace-nowrap ${
+                  activePeriod === key
+                    ? 'bg-brand-500 border-brand-500 text-white'
+                    : 'bg-surface-800 border-surface-700 text-surface-300 hover:text-white hover:border-surface-600'
+                }`}>
                 {label}
               </button>
             ))}
@@ -126,8 +156,9 @@ export default function Reports() {
 
       {/* Export buttons */}
       <div className="px-4 mb-4 flex gap-3">
-        <button onClick={() => exportToCSV(filteredMileage, filteredExpenses)} className="btn-primary flex items-center gap-2 flex-1">
-          <Download size={15} /> Export CSV
+        <button onClick={handleExport} className="btn-primary flex items-center gap-2 flex-1">
+          {csvExported ? <CheckCircle2 size={15} /> : <Download size={15} />}
+          {csvExported ? 'Exported!' : 'Export CSV'}
         </button>
         <button onClick={handleCopy} className="btn-secondary flex items-center gap-2 flex-1">
           {copied ? <ClipboardCheck size={15} className="text-emerald-400" /> : <Clipboard size={15} />}
@@ -164,7 +195,7 @@ export default function Reports() {
               <div key={e.id} className="flex items-center gap-3 p-4">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{e.description || e.supplier}</p>
-                  <p className="text-xs text-surface-400">{formatDate(e.date)} · {e.category} · {e.supplier}</p>
+                  <p className="text-xs text-surface-400">{formatDate(e.date)} · {e.category}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-sm font-semibold text-white">{formatCurrency(e.amount)}</p>
