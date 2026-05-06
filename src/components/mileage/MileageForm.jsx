@@ -97,7 +97,7 @@ export default function MileageForm() {
   }
 
   return (
-    <div className="pb-32">
+    <div className="pb-52">
       <div className="px-4 pt-6 pb-4">
         <h1 className="text-xl font-semibold text-white">{existing ? 'Edit Mileage' : 'Add Mileage'}</h1>
       </div>
@@ -245,7 +245,7 @@ export default function MileageForm() {
       </div>
 
       {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-surface-950/95 backdrop-blur border-t border-surface-800 p-4 space-y-2">
+      <div className="fixed bottom-16 left-0 right-0 bg-surface-950/95 backdrop-blur border-t border-surface-800 p-4 space-y-2 z-50">
         {form.miles && form.rate && (
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-surface-400">Claim total</span>

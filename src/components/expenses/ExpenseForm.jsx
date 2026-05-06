@@ -32,7 +32,7 @@ export default function ExpenseForm() {
   }
 
   return (
-    <div className="pb-32">
+    <div className="pb-44">
       <div className="px-4 pt-6 pb-4">
         <h1 className="text-xl font-semibold text-white">{existing ? 'Edit Expense' : 'Add Expense'}</h1>
       </div>
@@ -75,13 +75,13 @@ export default function ExpenseForm() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label-base">Amount (£)</label>
-            <input type="number" className="input-base" placeholder="0.00" value={form.amount}
-              onChange={e => set('amount', e.target.value)} step="0.01" min="0" />
+            <input type="text" inputMode="decimal" className="input-base" placeholder="0.00" value={form.amount}
+              onChange={e => set('amount', e.target.value)} />
           </div>
           <div>
             <label className="label-base">VAT (£) optional</label>
-            <input type="number" className="input-base" placeholder="0.00" value={form.vat}
-              onChange={e => set('vat', e.target.value)} step="0.01" min="0" />
+            <input type="text" inputMode="decimal" className="input-base" placeholder="0.00" value={form.vat}
+              onChange={e => set('vat', e.target.value)} />
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export default function ExpenseForm() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-surface-950/95 backdrop-blur border-t border-surface-800 p-4">
+      <div className="fixed bottom-16 left-0 right-0 bg-surface-950/95 backdrop-blur border-t border-surface-800 p-4 z-50">
         <div className="flex gap-2">
           <button onClick={() => navigate(-1)} className="btn-secondary flex-1">Cancel</button>
           <button onClick={handleSubmit} className="btn-primary flex-1">
