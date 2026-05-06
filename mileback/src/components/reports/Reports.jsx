@@ -4,7 +4,7 @@ import { useApp } from '../../store/AppContext'
 import { formatCurrency, formatDate, formatMiles } from '../../utils/formatters'
 import { exportToCSV, copyToClipboard } from '../../services/exportService'
 import StatusBadge from '../ui/StatusBadge'
-import { format, subDays, startOfMonth } from 'date-fns'
+import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths } from 'date-fns'
 
 export default function Reports() {
   const { mileageClaims, expenses } = useApp()
@@ -17,6 +17,18 @@ export default function Reports() {
   })
 
   const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: v }))
+
+  const setPeriod = (type) => {
+    const today = new Date()
+    if (type === 'week') {
+      setFilters(f => ({ ...f, dateFrom: format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd'), dateTo: format(endOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd') }))
+    } else if (type === 'month') {
+      setFilters(f => ({ ...f, dateFrom: format(startOfMonth(today), 'yyyy-MM-dd'), dateTo: format(endOfMonth(today), 'yyyy-MM-dd') }))
+    } else if (type === 'lastmonth') {
+      const last = subMonths(today, 1)
+      setFilters(f => ({ ...f, dateFrom: format(startOfMonth(last), 'yyyy-MM-dd'), dateTo: format(endOfMonth(last), 'yyyy-MM-dd') }))
+    }
+  }
 
   const filteredMileage = mileageClaims.filter(c => {
     if (filters.type === 'expense') return false
@@ -53,6 +65,14 @@ export default function Reports() {
       {/* Filters */}
       <div className="px-4 mb-4">
         <div className="card p-4 space-y-3">
+          <div className="flex gap-2">
+            {[['week', 'This week'], ['month', 'This month'], ['lastmonth', 'Last month']].map(([key, label]) => (
+              <button key={key} onClick={() => setPeriod(key)}
+                className="flex-1 bg-surface-800 border border-surface-700 rounded-xl py-2 text-xs font-medium text-surface-300 hover:text-white hover:border-surface-600 active:scale-95 transition-all">
+                {label}
+              </button>
+            ))}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label-base">From</label>

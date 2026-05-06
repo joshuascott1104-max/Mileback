@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { Plus, Trash2, Star, Car, Check } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Plus, Trash2, Star, Car, Check, Download, Upload } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
+import { exportBackup, readBackupFile } from '../../services/backupService'
 
 function Section({ title, children }) {
   return (
@@ -21,10 +22,13 @@ function Row({ label, children }) {
 }
 
 export default function Settings() {
-  const { settings, setSettings, vehicles, addVehicle, updateVehicle, deleteVehicle, setDefaultVehicle, favouriteJourneys, deleteFavouriteJourney } = useApp()
+  const { settings, setSettings, vehicles, addVehicle, updateVehicle, deleteVehicle, setDefaultVehicle, favouriteJourneys, deleteFavouriteJourney, mileageClaims, expenses, restoreBackup } = useApp()
   const [showAddVehicle, setShowAddVehicle] = useState(false)
   const [newVehicle, setNewVehicle] = useState({ name: '', registration: '', defaultRate: '' })
   const [saved, setSaved] = useState(false)
+  const [rateInput, setRateInput] = useState(String(settings.standardRate ?? 0.45))
+  const [importError, setImportError] = useState('')
+  const importRef = useRef(null)
 
   const handleSave = () => {
     setSaved(true)
@@ -36,6 +40,20 @@ export default function Settings() {
     addVehicle({ ...newVehicle, isDefault: vehicles.length === 0 })
     setNewVehicle({ name: '', registration: '', defaultRate: '' })
     setShowAddVehicle(false)
+  }
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImportError('')
+    try {
+      const data = await readBackupFile(file)
+      if (!window.confirm(`This will replace all your current data with the backup from ${data.exportedAt?.split('T')[0] || 'unknown date'}. Are you sure?`)) return
+      restoreBackup(data)
+    } catch (err) {
+      setImportError(err.message)
+    }
+    e.target.value = ''
   }
 
   return (
@@ -59,9 +77,17 @@ export default function Settings() {
       {/* Mileage */}
       <Section title="Mileage">
         <Row label="Standard rate (£/mile)">
-          <input type="number" className="input-base max-w-[120px] text-right" step="0.01" min="0"
-            value={settings.standardRate || 0.45}
-            onChange={e => setSettings(s => ({ ...s, standardRate: Number(e.target.value) }))}
+          <input type="text" inputMode="decimal" className="input-base max-w-[120px] text-right"
+            value={rateInput}
+            onChange={e => {
+              setRateInput(e.target.value)
+              const num = parseFloat(e.target.value)
+              if (!isNaN(num) && num >= 0) setSettings(s => ({ ...s, standardRate: num }))
+            }}
+            onBlur={() => {
+              const num = parseFloat(rateInput)
+              if (isNaN(num) || num < 0) setRateInput(String(settings.standardRate ?? 0.45))
+            }}
           />
         </Row>
         <div className="p-4">
@@ -150,6 +176,23 @@ export default function Settings() {
             <p>VITE_ORS_API_KEY=…</p>
             <p>VITE_MAPBOX_API_KEY=…</p>
           </div>
+        </div>
+      </Section>
+
+      {/* Data */}
+      <Section title="Data">
+        <div className="p-4 space-y-3">
+          <button onClick={() => exportBackup({ mileageClaims, expenses, vehicles, settings, favouriteJourneys })}
+            className="w-full flex items-center justify-center gap-2 btn-secondary">
+            <Download size={15} /> Export backup
+          </button>
+          <button onClick={() => importRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2 btn-secondary">
+            <Upload size={15} /> Import backup
+          </button>
+          <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+          {importError && <p className="text-xs text-red-400">{importError}</p>}
+          <p className="text-xs text-surface-400">Backup includes all claims, expenses, vehicles and settings.</p>
         </div>
       </Section>
     </div>

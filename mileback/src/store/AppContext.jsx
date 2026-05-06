@@ -62,12 +62,21 @@ export function AppProvider({ children }) {
     setFavouriteJourneys(prev => prev.filter(j => j.id !== id))
   }
 
+  const restoreBackup = (data) => {
+    if (data.mileageClaims) setMileageClaims(data.mileageClaims)
+    if (data.expenses) setExpenses(data.expenses)
+    if (data.vehicles) setVehicles(data.vehicles)
+    if (data.settings) setSettings(data.settings)
+    if (data.favouriteJourneys) setFavouriteJourneys(data.favouriteJourneys)
+  }
+
   const value = {
     mileageClaims, addMileageClaim, updateMileageClaim, deleteMileageClaim,
     expenses, addExpense, updateExpense, deleteExpense,
     vehicles, addVehicle, updateVehicle, deleteVehicle, setDefaultVehicle,
     settings, setSettings,
     favouriteJourneys, addFavouriteJourney, deleteFavouriteJourney,
+    restoreBackup,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
