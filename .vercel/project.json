@@ -1,0 +1,11 @@
+{
+  "orgId": "team_8fmleGiqMFnsk9CiHJfM2TOf",
+  "projectId": "",
+  "settings": {
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "installCommand": "npm install",
+    "framework": "vite",
+    "rootDirectory": "mileback"
+  }
+}
