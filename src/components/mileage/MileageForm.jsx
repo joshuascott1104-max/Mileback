@@ -50,6 +50,25 @@ export default function MileageForm() {
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
 
+  const usingOdometer = form.odometerStart !== '' && form.odometerEnd !== ''
+
+  const calcOdometerMiles = (start, end) => {
+    const s = parseFloat(start)
+    const e = parseFloat(end)
+    if (!isNaN(s) && !isNaN(e) && e > s) return Math.round((e - s) * 10) / 10
+    return null
+  }
+
+  const handleOdometerChange = (field, value) => {
+    const next = { ...form, [field]: value }
+    const miles = calcOdometerMiles(next.odometerStart, next.odometerEnd)
+    if (miles !== null) {
+      setForm(f => ({ ...f, [field]: value, miles, returnJourney: false }))
+    } else {
+      set(field, value)
+    }
+  }
+
   const total = calcMileageTotal(form.miles, form.rate, form.returnJourney)
 
   const handleVehicleChange = (e) => {
@@ -151,61 +170,65 @@ export default function MileageForm() {
           </select>
         </div>
 
-        {/* Postcodes */}
-        <div>
-          <label className="label-base">Start</label>
-          <div className="grid grid-cols-2 gap-2">
-            <input className="input-base" placeholder="Postcode" value={form.startPostcode}
-              onChange={e => set('startPostcode', e.target.value.toUpperCase())} />
-            <input className="input-base" placeholder="Location name (opt)" value={form.startLocationName}
-              onChange={e => set('startLocationName', e.target.value)} />
+        {/* Odometer readings — primary method */}
+        <div className="card p-4 space-y-3">
+          <p className="text-xs font-medium text-surface-300 uppercase tracking-wide">Vehicle Mileage Readings</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label-base">Start of Journey</label>
+              <input type="text" inputMode="decimal" className="input-base" placeholder="e.g. 45230" value={form.odometerStart}
+                onChange={e => handleOdometerChange('odometerStart', e.target.value)} />
+            </div>
+            <div>
+              <label className="label-base">End of Journey</label>
+              <input type="text" inputMode="decimal" className="input-base" placeholder="e.g. 45274" value={form.odometerEnd}
+                onChange={e => handleOdometerChange('odometerEnd', e.target.value)} />
+            </div>
           </div>
-        </div>
-        <div>
-          <label className="label-base">End</label>
-          <div className="grid grid-cols-2 gap-2">
-            <input className="input-base" placeholder="Postcode" value={form.endPostcode}
-              onChange={e => set('endPostcode', e.target.value.toUpperCase())}
-              onBlur={() => { if (form.startPostcode && form.endPostcode && !form.miles) handleCalculate() }} />
-            <input className="input-base" placeholder="Location name (opt)" value={form.endLocationName}
-              onChange={e => set('endLocationName', e.target.value)} />
-          </div>
-        </div>
-
-        {/* Calculate button */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleCalculate}
-            disabled={calculating || !form.startPostcode || !form.endPostcode}
-            className="flex items-center gap-2 bg-surface-800 border border-surface-700 rounded-xl px-4 py-3 text-sm text-white disabled:opacity-50 transition-all active:scale-95"
-          >
-            {calculating ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
-            {calculating ? 'Calculating…' : 'Calculate mileage'}
-          </button>
-          {!isApiConfigured() && (
-            <p className="text-xs text-surface-400">Add API key to enable auto-calc</p>
+          {usingOdometer && (
+            <p className="text-xs text-brand-400">
+              {calcOdometerMiles(form.odometerStart, form.odometerEnd) !== null
+                ? `${calcOdometerMiles(form.odometerStart, form.odometerEnd)} miles calculated from readings`
+                : 'End reading must be greater than start'}
+            </p>
           )}
         </div>
-        {calcError && <p className="text-xs text-red-400">{calcError}</p>}
 
-        {/* Odometer readings */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label-base">Odometer Start (mi)</label>
-            <input type="text" inputMode="decimal" className="input-base" placeholder="e.g. 45230" value={form.odometerStart}
-              onChange={e => set('odometerStart', e.target.value)} />
+        {/* Postcodes — optional for reference */}
+        <div>
+          <p className="label-base mb-2">Journey Locations (optional)</p>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <input className="input-base" placeholder="Start postcode" value={form.startPostcode}
+                onChange={e => set('startPostcode', e.target.value.toUpperCase())} />
+              <input className="input-base" placeholder="Start location" value={form.startLocationName}
+                onChange={e => set('startLocationName', e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input className="input-base" placeholder="End postcode" value={form.endPostcode}
+                onChange={e => set('endPostcode', e.target.value.toUpperCase())}
+                onBlur={() => { if (form.startPostcode && form.endPostcode && !form.miles) handleCalculate() }} />
+              <input className="input-base" placeholder="End location" value={form.endLocationName}
+                onChange={e => set('endLocationName', e.target.value)} />
+            </div>
           </div>
-          <div>
-            <label className="label-base">Odometer End (mi)</label>
-            <input type="text" inputMode="decimal" className="input-base" placeholder="e.g. 45274" value={form.odometerEnd}
-              onChange={e => set('odometerEnd', e.target.value)} />
-          </div>
+          {!usingOdometer && form.startPostcode && form.endPostcode && (
+            <button
+              onClick={handleCalculate}
+              disabled={calculating}
+              className="mt-2 flex items-center gap-2 bg-surface-800 border border-surface-700 rounded-xl px-4 py-2.5 text-sm text-white disabled:opacity-50 transition-all active:scale-95"
+            >
+              {calculating ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+              {calculating ? 'Calculating…' : 'Calculate miles from postcodes'}
+            </button>
+          )}
+          {calcError && <p className="text-xs text-red-400 mt-1">{calcError}</p>}
         </div>
 
         {/* Miles + Rate */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label-base">Miles</label>
+            <label className="label-base">Miles {usingOdometer && <span className="text-brand-400 normal-case font-normal">(from odometer)</span>}</label>
             <input type="text" inputMode="decimal" className="input-base" placeholder="0.0" value={form.miles}
               onChange={e => set('miles', e.target.value)} />
           </div>
@@ -216,20 +239,23 @@ export default function MileageForm() {
           </div>
         </div>
 
-        {/* Return journey */}
-        <div className="flex items-center justify-between card p-4">
+        {/* Return journey — disabled when using odometer */}
+        <div className={`flex items-center justify-between card p-4 ${usingOdometer ? 'opacity-40' : ''}`}>
           <div className="flex items-center gap-3">
             <RotateCcw size={16} className="text-surface-400" />
             <div>
               <p className="text-sm font-medium text-white">Return journey</p>
-              <p className="text-xs text-surface-400">Doubles the mileage total</p>
+              <p className="text-xs text-surface-400">
+                {usingOdometer ? 'Odometer already captures full distance' : 'Doubles the mileage total'}
+              </p>
             </div>
           </div>
           <button
-            onClick={() => set('returnJourney', !form.returnJourney)}
-            className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${form.returnJourney ? 'bg-brand-500' : 'bg-surface-700'}`}
+            onClick={() => !usingOdometer && set('returnJourney', !form.returnJourney)}
+            disabled={usingOdometer}
+            className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${form.returnJourney && !usingOdometer ? 'bg-brand-500' : 'bg-surface-700'}`}
           >
-            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${form.returnJourney ? 'left-[22px]' : 'left-0.5'}`} />
+            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${form.returnJourney && !usingOdometer ? 'left-[22px]' : 'left-0.5'}`} />
           </button>
         </div>
 
