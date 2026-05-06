@@ -21,6 +21,7 @@ function buildRows(mileageClaims, expenses) {
       VAT: '',
       'Expense Total': '',
       Notes: c.notes || '',
+      'Has Receipt': '',
       Status: c.status,
     })
   })
@@ -43,6 +44,7 @@ function buildRows(mileageClaims, expenses) {
       VAT: e.vat ? `£${e.vat.toFixed(2)}` : '',
       'Expense Total': `£${e.amount.toFixed(2)}`,
       Notes: e.notes || '',
+      'Has Receipt': e.receiptImage ? 'Yes' : 'No',
       Status: e.status,
     })
   })

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Plus, Receipt } from 'lucide-react'
+import { Plus, Receipt, Camera } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
 import { formatCurrency, formatDate } from '../../utils/formatters'
 import StatusBadge from '../ui/StatusBadge'
@@ -33,8 +33,11 @@ export default function ExpenseList() {
                 <p className="text-sm font-medium text-white truncate">{exp.description || exp.supplier}</p>
                 <p className="text-xs text-surface-400">{formatDate(exp.date)} · {exp.category}{exp.supplier ? ` · ${exp.supplier}` : ''}</p>
               </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-sm font-semibold text-white">{formatCurrency(exp.amount)}</p>
+              <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
+                <div className="flex items-center gap-1.5">
+                  {exp.receiptImage && <Camera size={11} className="text-emerald-400" />}
+                  <p className="text-sm font-semibold text-white">{formatCurrency(exp.amount)}</p>
+                </div>
                 <StatusBadge status={exp.status} />
               </div>
             </div>

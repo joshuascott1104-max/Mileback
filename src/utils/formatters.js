@@ -39,7 +39,17 @@ export const getMonthClaims = (mileageClaims, expenses) => {
   }
 }
 
-export const STATUS_LABELS = {
+export const getFinancialSummary = (mileageClaims, expenses) => {
+  const all = [
+    ...mileageClaims.map(c => ({ status: c.status, value: c.total || 0 })),
+    ...expenses.map(e => ({ status: e.status, value: e.amount || 0 })),
+  ]
+  const draft = all.filter(x => x.status === 'draft').reduce((s, x) => s + x.value, 0)
+  const submitted = all.filter(x => x.status === 'submitted').reduce((s, x) => s + x.value, 0)
+  const paid = all.filter(x => x.status === 'paid').reduce((s, x) => s + x.value, 0)
+  return { owed: draft + submitted, draft, submitted, paid }
+}
+
   draft: 'Draft',
   submitted: 'Submitted',
   paid: 'Paid',

@@ -1,8 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
+import { Camera, X } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
 import { EXPENSE_CATEGORIES } from '../../utils/formatters'
+
+function compressImage(file) {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.onload = () => {
+      const maxWidth = 1200
+      const scale = Math.min(1, maxWidth / img.width)
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width * scale
+      canvas.height = img.height * scale
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/jpeg', 0.7))
+    }
+    img.src = URL.createObjectURL(file)
+  })
+}
 
 const empty = () => ({
   date: format(new Date(), 'yyyy-MM-dd'),
@@ -12,6 +29,7 @@ const empty = () => ({
   amount: '',
   vat: '',
   notes: '',
+  receiptImage: '',
   status: 'draft',
 })
 
@@ -21,8 +39,17 @@ export default function ExpenseForm() {
   const { expenses, addExpense, updateExpense, deleteExpense } = useApp()
   const existing = id ? expenses.find(e => e.id === id) : null
   const [form, setForm] = useState(existing || empty())
+  const fileRef = useRef(null)
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
+
+  const handleReceiptChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const compressed = await compressImage(file)
+    set('receiptImage', compressed)
+    e.target.value = ''
+  }
 
   const handleSubmit = () => {
     if (!form.amount) return
@@ -83,6 +110,37 @@ export default function ExpenseForm() {
             <input type="text" inputMode="decimal" className="input-base" placeholder="0.00" value={form.vat}
               onChange={e => set('vat', e.target.value)} />
           </div>
+        </div>
+
+        {/* Receipt photo */}
+        <div>
+          <label className="label-base">Receipt</label>
+          {form.receiptImage ? (
+            <div className="relative inline-block">
+              <img src={form.receiptImage} alt="Receipt" className="w-full max-h-48 object-cover rounded-xl border border-surface-700" />
+              <button
+                onClick={() => set('receiptImage', '')}
+                className="absolute top-2 right-2 w-7 h-7 bg-surface-950/80 rounded-full flex items-center justify-center text-white"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 bg-surface-800 border border-dashed border-surface-600 rounded-xl py-4 text-sm text-surface-300 active:scale-95 transition-all"
+            >
+              <Camera size={16} /> Take photo or upload receipt
+            </button>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleReceiptChange}
+          />
         </div>
 
         <div>
