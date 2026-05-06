@@ -18,7 +18,7 @@ const empty = () => ({
 export default function ExpenseForm() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { expenses, addExpense, updateExpense } = useApp()
+  const { expenses, addExpense, updateExpense, deleteExpense } = useApp()
   const existing = id ? expenses.find(e => e.id === id) : null
   const [form, setForm] = useState(existing || empty())
 
@@ -95,6 +95,9 @@ export default function ExpenseForm() {
       <div className="fixed bottom-16 left-0 right-0 bg-surface-950/95 backdrop-blur border-t border-surface-800 p-4 z-50">
         <div className="flex gap-2">
           <button onClick={() => navigate(-1)} className="btn-secondary flex-1">Cancel</button>
+          {existing && (
+            <button onClick={() => { deleteExpense(id); navigate('/expenses') }} className="btn-secondary flex-1 text-red-400 border-red-400/30">Delete</button>
+          )}
           <button onClick={handleSubmit} className="btn-primary flex-1">
             {existing ? 'Save changes' : 'Save expense'}
           </button>

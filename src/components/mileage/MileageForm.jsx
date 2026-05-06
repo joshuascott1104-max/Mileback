@@ -17,6 +17,8 @@ const empty = () => ({
   reason: '',
   miles: '',
   rate: '',
+  odometerStart: '',
+  odometerEnd: '',
   returnJourney: false,
   notes: '',
   status: 'draft',
@@ -25,7 +27,7 @@ const empty = () => ({
 export default function MileageForm() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { mileageClaims, addMileageClaim, updateMileageClaim, vehicles, settings, favouriteJourneys, addFavouriteJourney } = useApp()
+  const { mileageClaims, addMileageClaim, updateMileageClaim, deleteMileageClaim, vehicles, settings, favouriteJourneys, addFavouriteJourney } = useApp()
 
   const existing = id ? mileageClaims.find(c => c.id === id) : null
   const [form, setForm] = useState(existing || empty())
@@ -163,7 +165,8 @@ export default function MileageForm() {
           <label className="label-base">End</label>
           <div className="grid grid-cols-2 gap-2">
             <input className="input-base" placeholder="Postcode" value={form.endPostcode}
-              onChange={e => set('endPostcode', e.target.value.toUpperCase())} />
+              onChange={e => set('endPostcode', e.target.value.toUpperCase())}
+              onBlur={() => { if (form.startPostcode && form.endPostcode && !form.miles) handleCalculate() }} />
             <input className="input-base" placeholder="Location name (opt)" value={form.endLocationName}
               onChange={e => set('endLocationName', e.target.value)} />
           </div>
@@ -184,6 +187,20 @@ export default function MileageForm() {
           )}
         </div>
         {calcError && <p className="text-xs text-red-400">{calcError}</p>}
+
+        {/* Odometer readings */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label-base">Odometer Start (mi)</label>
+            <input type="text" inputMode="decimal" className="input-base" placeholder="e.g. 45230" value={form.odometerStart}
+              onChange={e => set('odometerStart', e.target.value)} />
+          </div>
+          <div>
+            <label className="label-base">Odometer End (mi)</label>
+            <input type="text" inputMode="decimal" className="input-base" placeholder="e.g. 45274" value={form.odometerEnd}
+              onChange={e => set('odometerEnd', e.target.value)} />
+          </div>
+        </div>
 
         {/* Miles + Rate */}
         <div className="grid grid-cols-2 gap-3">
@@ -259,6 +276,9 @@ export default function MileageForm() {
           <button onClick={() => navigate(-1)} className="btn-secondary flex-1">Cancel</button>
           {!existing && (
             <button onClick={() => handleSubmit(true)} className="btn-secondary flex-1">Save + Add another</button>
+          )}
+          {existing && (
+            <button onClick={() => { deleteMileageClaim(id); navigate('/mileage') }} className="btn-secondary flex-1 text-red-400 border-red-400/30">Delete</button>
           )}
           <button onClick={() => handleSubmit(false)} className="btn-primary flex-1">
             {existing ? 'Save changes' : 'Save claim'}
