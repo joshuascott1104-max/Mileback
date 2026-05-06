@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react'
-import { Plus, Trash2, Star, Car, Check, Download, Upload } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Plus, Trash2, Star, Car, Check, Download, Upload, History } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
 import { exportBackup, readBackupFile } from '../../services/backupService'
+import { getLatestAutoBackup } from '../../services/autoBackupService'
 
 function Section({ title, children }) {
   return (
@@ -28,7 +29,12 @@ export default function Settings() {
   const [saved, setSaved] = useState(false)
   const [rateInput, setRateInput] = useState(String(settings.standardRate ?? 0.45))
   const [importError, setImportError] = useState('')
+  const [autoBackupInfo, setAutoBackupInfo] = useState(null)
   const importRef = useRef(null)
+
+  useEffect(() => {
+    getLatestAutoBackup().then(b => setAutoBackupInfo(b))
+  }, [])
 
   const handleSave = () => {
     setSaved(true)
@@ -193,6 +199,34 @@ export default function Settings() {
           <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
           {importError && <p className="text-xs text-red-400">{importError}</p>}
           <p className="text-xs text-surface-400">Backup includes all claims, expenses, vehicles and settings.</p>
+        </div>
+      </Section>
+
+      {/* Auto-backup */}
+      <Section title="Auto-backup">
+        <div className="p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <History size={15} className="text-brand-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm text-white">Device auto-save</p>
+              <p className="text-xs text-surface-400">
+                {autoBackupInfo
+                  ? `Last saved: ${autoBackupInfo.savedAt?.split('T')[0] || autoBackupInfo.day}`
+                  : 'Saves automatically to this device after every change'}
+              </p>
+            </div>
+          </div>
+          {autoBackupInfo && (
+            <button
+              onClick={() => {
+                if (!window.confirm(`Restore auto-save from ${autoBackupInfo.day}? This will replace all current data.`)) return
+                restoreBackup(autoBackupInfo)
+              }}
+              className="w-full flex items-center justify-center gap-2 btn-secondary text-xs py-2"
+            >
+              <History size={13} /> Restore from auto-save ({autoBackupInfo.day})
+            </button>
+          )}
         </div>
       </Section>
     </div>

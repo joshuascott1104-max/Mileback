@@ -10,18 +10,36 @@ const STATUS_CYCLE = { draft: 'submitted', submitted: 'paid', paid: 'draft' }
 
 export default function ExpenseList() {
   const navigate = useNavigate()
-  const { expenses, updateExpense, deleteExpense } = useApp()
+  const { expenses, updateExpense, deleteExpense, addExpense } = useApp()
   const [viewingReceipt, setViewingReceipt] = useState(null)
   const [submitted, setSubmitted] = useState(false)
   const [swipedId, setSwipedId] = useState(null)
+  const [undoItem, setUndoItem] = useState(null)
   const touchStartX = useRef(0)
+  const undoTimer = useRef(null)
 
   const drafts = expenses.filter(e => e.status === 'draft')
+  const totalValue = expenses.reduce((s, e) => s + (e.amount || 0), 0)
 
   const submitAllDrafts = () => {
     drafts.forEach(e => updateExpense(e.id, { status: 'submitted' }))
     setSubmitted(true)
     setTimeout(() => setSubmitted(false), 1500)
+  }
+
+  const handleDelete = (exp) => {
+    clearTimeout(undoTimer.current)
+    deleteExpense(exp.id)
+    setSwipedId(null)
+    setUndoItem(exp)
+    undoTimer.current = setTimeout(() => setUndoItem(null), 4000)
+  }
+
+  const handleUndo = () => {
+    clearTimeout(undoTimer.current)
+    const { id, ...rest } = undoItem
+    addExpense(rest)
+    setUndoItem(null)
   }
 
   const handleRowClick = (id) => {
@@ -49,78 +67,78 @@ export default function ExpenseList() {
         <EmptyState icon={Receipt} title="No expenses" description="Start logging your business expenses"
           action={<button onClick={() => navigate('/expenses/add')} className="btn-primary">Add first expense</button>} />
       ) : (
-        <div className="px-4 card divide-y divide-surface-800">
-          {expenses.map(exp => (
-            <div key={exp.id} className="relative overflow-hidden">
-              {/* Swipe-to-delete reveal */}
-              <div className="absolute inset-y-0 right-0 w-20 bg-red-500 flex items-center justify-center">
-                <button
-                  onClick={() => { deleteExpense(exp.id); setSwipedId(null) }}
-                  className="text-white p-2 active:opacity-70"
+        <>
+          <div className="px-4 card divide-y divide-surface-800">
+            {expenses.map(exp => (
+              <div key={exp.id} className="relative overflow-hidden">
+                <div className="absolute inset-y-0 right-0 w-20 bg-red-500 flex items-center justify-center">
+                  <button onClick={() => handleDelete(exp)} className="text-white p-2 active:opacity-70">
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+                <div
+                  style={{ transform: swipedId === exp.id ? 'translateX(-80px)' : 'translateX(0)' }}
+                  className="flex items-center gap-3 py-4 bg-surface-950 transition-transform duration-200 cursor-pointer active:bg-surface-800/50"
+                  onClick={() => handleRowClick(exp.id)}
+                  onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+                  onTouchEnd={e => {
+                    const dx = touchStartX.current - e.changedTouches[0].clientX
+                    if (dx > 60) setSwipedId(exp.id)
+                    else if (dx < -20) setSwipedId(null)
+                  }}
                 >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-              {/* Row content */}
-              <div
-                style={{ transform: swipedId === exp.id ? 'translateX(-80px)' : 'translateX(0)' }}
-                className="flex items-center gap-3 py-4 bg-surface-950 transition-transform duration-200 cursor-pointer active:bg-surface-800/50"
-                onClick={() => handleRowClick(exp.id)}
-                onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
-                onTouchEnd={e => {
-                  const dx = touchStartX.current - e.changedTouches[0].clientX
-                  if (dx > 60) setSwipedId(exp.id)
-                  else if (dx < -20) setSwipedId(null)
-                }}
-              >
-                <div className="w-9 h-9 bg-emerald-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Receipt size={15} className="text-emerald-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{exp.description || exp.supplier}</p>
-                  <p className="text-xs text-surface-400">{formatDate(exp.date)} · {exp.category}{exp.supplier ? ` · ${exp.supplier}` : ''}</p>
-                </div>
-                <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-1.5">
-                    {exp.receiptImage && (
-                      <button
-                        onClick={e => { e.stopPropagation(); setViewingReceipt(exp.receiptImage) }}
-                        className="p-1 text-emerald-400 active:scale-90 transition-transform"
-                      >
-                        <Camera size={13} />
-                      </button>
-                    )}
-                    <p className="text-sm font-semibold text-white">{formatCurrency(exp.amount)}</p>
+                  <div className="w-9 h-9 bg-emerald-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Receipt size={15} className="text-emerald-400" />
                   </div>
-                  <StatusBadge
-                    status={exp.status}
-                    onClick={e => { e.stopPropagation(); updateExpense(exp.id, { status: STATUS_CYCLE[exp.status] || 'draft' }) }}
-                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{exp.description || exp.supplier}</p>
+                    <p className="text-xs text-surface-400">{formatDate(exp.date)} · {exp.category}{exp.supplier ? ` · ${exp.supplier}` : ''}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-1.5">
+                      {exp.receiptImage && (
+                        <button
+                          onClick={e => { e.stopPropagation(); setViewingReceipt(exp.receiptImage) }}
+                          className="p-1 text-emerald-400 active:scale-90 transition-transform"
+                        >
+                          <Camera size={13} />
+                        </button>
+                      )}
+                      <p className="text-sm font-semibold text-white">{formatCurrency(exp.amount)}</p>
+                    </div>
+                    <StatusBadge
+                      status={exp.status}
+                      onClick={e => { e.stopPropagation(); updateExpense(exp.id, { status: STATUS_CYCLE[exp.status] || 'draft' }) }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* List total */}
+          <div className="px-4 mt-3 flex items-center justify-between card p-3">
+            <p className="text-xs text-surface-400">{expenses.length} expense{expenses.length !== 1 ? 's' : ''}</p>
+            <p className="text-sm font-semibold text-white">{formatCurrency(totalValue)}</p>
+          </div>
+        </>
       )}
 
       {/* Full-screen receipt viewer */}
       {viewingReceipt && (
-        <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-          onClick={() => setViewingReceipt(null)}
-        >
-          <button
-            className="absolute top-4 right-4 w-9 h-9 bg-surface-800 rounded-full flex items-center justify-center text-white"
-            onClick={() => setViewingReceipt(null)}
-          >
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setViewingReceipt(null)}>
+          <button className="absolute top-4 right-4 w-9 h-9 bg-surface-800 rounded-full flex items-center justify-center text-white" onClick={() => setViewingReceipt(null)}>
             <X size={18} />
           </button>
-          <img
-            src={viewingReceipt}
-            alt="Receipt"
-            className="max-w-full max-h-[90vh] object-contain rounded-xl"
-            onClick={e => e.stopPropagation()}
-          />
+          <img src={viewingReceipt} alt="Receipt" className="max-w-full max-h-[90vh] object-contain rounded-xl" onClick={e => e.stopPropagation()} />
+        </div>
+      )}
+
+      {/* Undo toast */}
+      {undoItem && (
+        <div className="fixed bottom-20 left-4 right-4 z-50 bg-surface-800 border border-surface-700 rounded-2xl px-4 py-3 flex items-center justify-between shadow-lg">
+          <p className="text-sm text-white">Expense deleted</p>
+          <button onClick={handleUndo} className="text-brand-400 text-sm font-semibold active:opacity-70">Undo</button>
         </div>
       )}
     </div>

@@ -4,7 +4,7 @@ import { useApp } from '../../store/AppContext'
 import { formatCurrency, formatDate, formatMiles } from '../../utils/formatters'
 import { exportToCSV, copyToClipboard } from '../../services/exportService'
 import StatusBadge from '../ui/StatusBadge'
-import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths } from 'date-fns'
 
 export default function Reports() {
   const { mileageClaims, expenses } = useApp()
@@ -27,6 +27,9 @@ export default function Reports() {
     } else if (type === 'lastmonth') {
       const last = subMonths(today, 1)
       setFilters(f => ({ ...f, dateFrom: format(startOfMonth(last), 'yyyy-MM-dd'), dateTo: format(endOfMonth(last), 'yyyy-MM-dd') }))
+    } else if (type === 'taxyear') {
+      const y = today.getMonth() > 3 || (today.getMonth() === 3 && today.getDate() >= 6) ? today.getFullYear() : today.getFullYear() - 1
+      setFilters(f => ({ ...f, dateFrom: `${y}-04-06`, dateTo: `${y + 1}-04-05` }))
     }
   }
 
@@ -65,10 +68,10 @@ export default function Reports() {
       {/* Filters */}
       <div className="px-4 mb-4">
         <div className="card p-4 space-y-3">
-          <div className="flex gap-2">
-            {[['week', 'This week'], ['month', 'This month'], ['lastmonth', 'Last month']].map(([key, label]) => (
+          <div className="flex gap-2 flex-wrap">
+            {[['week', 'This week'], ['month', 'This month'], ['lastmonth', 'Last month'], ['taxyear', 'Tax year']].map(([key, label]) => (
               <button key={key} onClick={() => setPeriod(key)}
-                className="flex-1 bg-surface-800 border border-surface-700 rounded-xl py-2 text-xs font-medium text-surface-300 hover:text-white hover:border-surface-600 active:scale-95 transition-all">
+                className="flex-1 bg-surface-800 border border-surface-700 rounded-xl py-2 text-xs font-medium text-surface-300 hover:text-white hover:border-surface-600 active:scale-95 transition-all whitespace-nowrap">
                 {label}
               </button>
             ))}

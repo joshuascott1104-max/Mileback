@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Car, Receipt, Download, ArrowRight, Plus, CheckCircle2, RotateCcw } from 'lucide-react'
+import { Car, Receipt, Download, ArrowRight, Plus, CheckCircle2, RotateCcw, ShieldAlert } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
 import { formatCurrency, formatDate, getFinancialSummary, calcMileageTotal, EXPENSE_CATEGORIES } from '../../utils/formatters'
+import { exportBackup } from '../../services/backupService'
 import StatusBadge from '../ui/StatusBadge'
-import { format } from 'date-fns'
+import { format, differenceInDays, parseISO } from 'date-fns'
 
 function QuickLog({ onSaved, prefill }) {
   const { vehicles, settings, addMileageClaim } = useApp()
@@ -184,10 +185,20 @@ function QuickExpense({ onSaved }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { mileageClaims, expenses } = useApp()
+  const { mileageClaims, expenses, vehicles, settings, setSettings, favouriteJourneys } = useApp()
   const { owed, draft, submitted, paid } = getFinancialSummary(mileageClaims, expenses)
   const [refreshKey, setRefreshKey] = useState(0)
   const [quickLogPrefill, setQuickLogPrefill] = useState(null)
+
+  const daysSinceBackup = settings.lastManualBackupDate
+    ? differenceInDays(new Date(), parseISO(settings.lastManualBackupDate))
+    : null
+  const showBackupBanner = (daysSinceBackup === null && mileageClaims.length > 3) || daysSinceBackup >= 7
+
+  const handleBackupNow = () => {
+    exportBackup({ mileageClaims, expenses, vehicles, settings, favouriteJourneys })
+    setSettings(s => ({ ...s, lastManualBackupDate: new Date().toISOString().split('T')[0] }))
+  }
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const todayMileage = mileageClaims.filter(c => c.date === today).reduce((s, c) => s + (c.total || 0), 0)
@@ -208,6 +219,25 @@ export default function Dashboard() {
         <p className="text-surface-400 text-sm">{format(new Date(), 'EEEE, d MMMM')}</p>
         <h1 className="text-2xl font-semibold text-white mt-0.5">Dashboard</h1>
       </div>
+
+      {/* Backup reminder banner */}
+      {showBackupBanner && (
+        <div className="px-4 mb-3">
+          <button
+            onClick={handleBackupNow}
+            className="w-full flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 active:scale-[0.99] transition-all"
+          >
+            <ShieldAlert size={16} className="text-amber-400 flex-shrink-0" />
+            <div className="flex-1 text-left">
+              <p className="text-xs font-semibold text-amber-400">
+                {daysSinceBackup === null ? 'No backup yet' : `Last backup ${daysSinceBackup} day${daysSinceBackup !== 1 ? 's' : ''} ago`}
+              </p>
+              <p className="text-xs text-amber-400/70">Tap to download backup now</p>
+            </div>
+            <Download size={14} className="text-amber-400 flex-shrink-0" />
+          </button>
+        </div>
+      )}
 
       {/* Quick actions */}
       <div className="px-4 mb-4 space-y-2">

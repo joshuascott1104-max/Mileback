@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react'
+import React, { createContext, useContext, useEffect, useRef } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { demoVehicles, demoMileageClaims, demoExpenses, demoSettings, demoFavouriteJourneys } from '../data/demo'
+import { saveAutoBackup } from '../services/autoBackupService'
 
 const AppContext = createContext(null)
 
@@ -10,6 +11,13 @@ export function AppProvider({ children }) {
   const [vehicles, setVehicles] = useLocalStorage('mileback_vehicles', demoVehicles)
   const [settings, setSettings] = useLocalStorage('mileback_settings', demoSettings)
   const [favouriteJourneys, setFavouriteJourneys] = useLocalStorage('mileback_favourites', demoFavouriteJourneys)
+
+  // Auto-backup to IndexedDB on any data change (skips initial mount)
+  const mounted = useRef(false)
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return }
+    saveAutoBackup({ mileageClaims, expenses, vehicles, settings, favouriteJourneys })
+  }, [mileageClaims, expenses, vehicles, settings, favouriteJourneys])
 
   // --- Mileage ---
   const addMileageClaim = (claim) => {
