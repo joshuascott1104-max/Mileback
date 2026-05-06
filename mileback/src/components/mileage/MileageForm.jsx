@@ -112,7 +112,7 @@ export default function MileageForm() {
       navigate('/mileage')
     } else {
       addMileageClaim(claim)
-      if (andAnother) setForm({ ...empty(), rate: settings.standardRate || 0.45, vehicleId: form.vehicleId, vehicleName: form.vehicleName })
+      if (andAnother) setForm({ ...empty(), date: form.date, rate: form.rate, vehicleId: form.vehicleId, vehicleName: form.vehicleName })
       else navigate('/mileage')
     }
   }

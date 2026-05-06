@@ -36,9 +36,9 @@ const empty = () => ({
 export default function ExpenseForm() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { expenses, addExpense, updateExpense, deleteExpense } = useApp()
+  const { expenses, addExpense, updateExpense, deleteExpense, settings, setSettings } = useApp()
   const existing = id ? expenses.find(e => e.id === id) : null
-  const [form, setForm] = useState(existing || empty())
+  const [form, setForm] = useState(existing || { ...empty(), category: settings.lastExpenseCategory || 'Parking' })
   const fileRef = useRef(null)
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
@@ -54,8 +54,13 @@ export default function ExpenseForm() {
   const handleSubmit = () => {
     if (!form.amount) return
     const expense = { ...form, amount: Number(form.amount), vat: Number(form.vat || 0) }
-    if (existing) { updateExpense(id, expense); navigate('/expenses') }
-    else { addExpense(expense); navigate('/expenses') }
+    if (existing) {
+      updateExpense(id, expense)
+    } else {
+      setSettings(s => ({ ...s, lastExpenseCategory: form.category }))
+      addExpense(expense)
+    }
+    navigate('/expenses')
   }
 
   return (
