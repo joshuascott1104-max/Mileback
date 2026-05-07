@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Receipt, Camera, X, CheckCircle2, Trash2, Search } from 'lucide-react'
 import { useApp } from '../../store/AppContext'
-import { formatCurrency, formatRelativeDate } from '../../utils/formatters'
+import { formatCurrency, formatRelativeDate, EXPENSE_CATEGORIES } from '../../utils/formatters'
 import StatusBadge from '../ui/StatusBadge'
 import EmptyState from '../ui/EmptyState'
 
@@ -16,11 +16,13 @@ export default function ExpenseList() {
   const [swipedId, setSwipedId] = useState(null)
   const [undoItem, setUndoItem] = useState(null)
   const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
   const touchStartX = useRef(0)
   const undoTimer = useRef(null)
 
   const drafts = expenses.filter(e => e.status === 'draft')
   const filtered = expenses.filter(e => {
+    if (categoryFilter !== 'all' && e.category !== categoryFilter) return false
     if (!search) return true
     const q = search.toLowerCase()
     return `${e.description} ${e.supplier} ${e.category}`.toLowerCase().includes(q)
@@ -69,11 +71,11 @@ export default function ExpenseList() {
         </div>
       </div>
 
-      {/* Search — shown when list is non-trivial */}
-      {expenses.length > 5 && (
-        <div className="px-4 mb-3">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
+      {/* Search + category filter — shown when list is non-trivial */}
+      {expenses.length > 3 && (
+        <div className="mb-3 space-y-2">
+          <div className="px-4 relative">
+            <Search size={14} className="absolute left-7 top-1/2 -translate-y-1/2 text-surface-400 pointer-events-none" />
             <input
               className="input-base pl-9 pr-8"
               placeholder="Search expenses…"
@@ -81,10 +83,23 @@ export default function ExpenseList() {
               onChange={e => setSearch(e.target.value)}
             />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400">
+              <button onClick={() => setSearch('')} className="absolute right-7 top-1/2 -translate-y-1/2 text-surface-400">
                 <X size={13} />
               </button>
             )}
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 px-4 no-scrollbar">
+            {['all', ...EXPENSE_CATEGORIES].map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
+                  categoryFilter === cat ? 'bg-brand-500 text-white' : 'bg-surface-800 text-surface-400'
+                }`}
+              >
+                {cat === 'all' ? 'All' : cat}
+              </button>
+            ))}
           </div>
         </div>
       )}

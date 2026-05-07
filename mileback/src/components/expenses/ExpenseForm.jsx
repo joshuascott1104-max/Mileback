@@ -113,13 +113,20 @@ export default function ExpenseForm() {
         <div>
           <label className="label-base">Receipt</label>
           {form.receiptImage ? (
-            <div className="relative inline-block">
+            <div className="relative w-full">
               <img src={form.receiptImage} alt="Receipt" className="w-full max-h-48 object-cover rounded-xl border border-surface-700" />
               <button
                 onClick={() => set('receiptImage', '')}
                 className="absolute top-2 right-2 w-7 h-7 bg-surface-950/80 rounded-full flex items-center justify-center text-white"
               >
                 <X size={14} />
+              </button>
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="absolute top-2 left-2 w-7 h-7 bg-surface-950/80 rounded-full flex items-center justify-center text-white"
+                title="Retake photo"
+              >
+                <Camera size={14} />
               </button>
             </div>
           ) : (

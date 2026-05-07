@@ -5,8 +5,25 @@ import { useApp } from '../../store/AppContext'
 import { formatCurrency, formatRelativeDate, formatMiles } from '../../utils/formatters'
 import StatusBadge from '../ui/StatusBadge'
 import EmptyState from '../ui/EmptyState'
+import { parseISO, startOfWeek, endOfWeek, isThisWeek, subWeeks, format, isWithinInterval } from 'date-fns'
 
 const STATUS_CYCLE = { draft: 'submitted', submitted: 'paid', paid: 'draft' }
+
+function getWeekLabel(dateStr) {
+  try {
+    const date = parseISO(dateStr)
+    const today = new Date()
+    if (isThisWeek(date, { weekStartsOn: 1 })) return 'This week'
+    const lastWeekStart = startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 })
+    const lastWeekEnd = endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 })
+    if (isWithinInterval(date, { start: lastWeekStart, end: lastWeekEnd })) return 'Last week'
+    const wStart = startOfWeek(date, { weekStartsOn: 1 })
+    const wEnd = endOfWeek(date, { weekStartsOn: 1 })
+    return `${format(wStart, 'd MMM')} – ${format(wEnd, 'd MMM')}`
+  } catch {
+    return 'Earlier'
+  }
+}
 
 export default function MileageList() {
   const navigate = useNavigate()
@@ -32,6 +49,15 @@ export default function MileageList() {
 
   const totalMiles = filtered.reduce((s, c) => s + (c.returnJourney ? c.miles * 2 : c.miles), 0)
   const totalValue = filtered.reduce((s, c) => s + (c.total || 0), 0)
+
+  // Group by week
+  const grouped = filtered.reduce((acc, claim) => {
+    const label = getWeekLabel(claim.date)
+    if (!acc[label]) acc[label] = []
+    acc[label].push(claim)
+    return acc
+  }, {})
+  const groupKeys = Object.keys(grouped)
 
   const duplicate = (claim, e) => {
     e.stopPropagation()
@@ -64,6 +90,52 @@ export default function MileageList() {
     if (swipedId) { setSwipedId(null); return }
     navigate(`/mileage/edit/${id}`)
   }
+
+  const ClaimRow = ({ claim }) => (
+    <div key={claim.id} className="relative overflow-hidden">
+      <div className="absolute inset-y-0 right-0 w-20 bg-red-500 flex items-center justify-center">
+        <button onClick={() => handleDelete(claim)} className="text-white p-2 active:opacity-70">
+          <Trash2 size={18} />
+        </button>
+      </div>
+      <div
+        style={{ transform: swipedId === claim.id ? 'translateX(-80px)' : 'translateX(0)' }}
+        className="flex items-center gap-3 py-4 bg-surface-950 transition-transform duration-200 cursor-pointer active:bg-surface-800/50"
+        onClick={() => handleRowClick(claim.id)}
+        onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+        onTouchEnd={e => {
+          const dx = touchStartX.current - e.changedTouches[0].clientX
+          if (dx > 60) setSwipedId(claim.id)
+          else if (dx < -20) setSwipedId(null)
+        }}
+      >
+        <div className="w-9 h-9 bg-brand-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Car size={15} className="text-brand-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-white truncate">
+            {claim.reason || `${claim.startPostcode} → ${claim.endPostcode}`}
+          </p>
+          <p className="text-xs text-surface-400">
+            {formatRelativeDate(claim.date)} · {formatMiles(claim.returnJourney ? claim.miles * 2 : claim.miles)}
+            {claim.vehicleName ? ` · ${claim.vehicleName}` : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="text-right">
+            <p className="text-sm font-semibold text-white">{formatCurrency(claim.total)}</p>
+            <StatusBadge
+              status={claim.status}
+              onClick={e => { e.stopPropagation(); updateMileageClaim(claim.id, { status: STATUS_CYCLE[claim.status] || 'draft' }) }}
+            />
+          </div>
+          <button onClick={(e) => duplicate(claim, e)} className="p-2 text-surface-400 hover:text-white transition-colors" title="Duplicate">
+            <Copy size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="pb-24">
@@ -114,53 +186,20 @@ export default function MileageList() {
         <p className="text-center text-surface-400 text-sm py-12">No journeys match your search</p>
       ) : (
         <>
-          <div className="px-4 card divide-y divide-surface-800">
-            {filtered.map(claim => (
-              <div key={claim.id} className="relative overflow-hidden">
-                <div className="absolute inset-y-0 right-0 w-20 bg-red-500 flex items-center justify-center">
-                  <button onClick={() => handleDelete(claim)} className="text-white p-2 active:opacity-70">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-                <div
-                  style={{ transform: swipedId === claim.id ? 'translateX(-80px)' : 'translateX(0)' }}
-                  className="flex items-center gap-3 py-4 bg-surface-950 transition-transform duration-200 cursor-pointer active:bg-surface-800/50"
-                  onClick={() => handleRowClick(claim.id)}
-                  onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
-                  onTouchEnd={e => {
-                    const dx = touchStartX.current - e.changedTouches[0].clientX
-                    if (dx > 60) setSwipedId(claim.id)
-                    else if (dx < -20) setSwipedId(null)
-                  }}
-                >
-                  <div className="w-9 h-9 bg-brand-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Car size={15} className="text-brand-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">
-                      {claim.reason || `${claim.startPostcode} → ${claim.endPostcode}`}
-                    </p>
-                    <p className="text-xs text-surface-400">
-                      {formatRelativeDate(claim.date)} · {formatMiles(claim.returnJourney ? claim.miles * 2 : claim.miles)}
-                      {claim.vehicleName ? ` · ${claim.vehicleName}` : ''}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-white">{formatCurrency(claim.total)}</p>
-                      <StatusBadge
-                        status={claim.status}
-                        onClick={e => { e.stopPropagation(); updateMileageClaim(claim.id, { status: STATUS_CYCLE[claim.status] || 'draft' }) }}
-                      />
-                    </div>
-                    <button onClick={(e) => duplicate(claim, e)} className="p-2 text-surface-400 hover:text-white transition-colors" title="Duplicate">
-                      <Copy size={14} />
-                    </button>
-                  </div>
+          {groupKeys.length > 1 ? (
+            groupKeys.map(label => (
+              <div key={label}>
+                <p className="px-4 pt-3 pb-1 text-xs font-medium text-surface-500 uppercase tracking-wide">{label}</p>
+                <div className="px-4 card divide-y divide-surface-800">
+                  {grouped[label].map(claim => <ClaimRow key={claim.id} claim={claim} />)}
                 </div>
               </div>
-            ))}
-          </div>
+            ))
+          ) : (
+            <div className="px-4 card divide-y divide-surface-800">
+              {filtered.map(claim => <ClaimRow key={claim.id} claim={claim} />)}
+            </div>
+          )}
 
           {/* List totals */}
           <div className="px-4 mt-3 flex items-center justify-between card p-3">

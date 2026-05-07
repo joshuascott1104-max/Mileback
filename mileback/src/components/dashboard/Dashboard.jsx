@@ -185,10 +185,11 @@ function QuickExpense({ onSaved }) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { mileageClaims, expenses, vehicles, settings, setSettings, favouriteJourneys } = useApp()
+  const { mileageClaims, expenses, vehicles, settings, setSettings, favouriteJourneys, updateMileageClaim, updateExpense } = useApp()
   const { owed, draft, submitted, paid } = getFinancialSummary(mileageClaims, expenses)
   const [refreshKey, setRefreshKey] = useState(0)
   const [quickLogPrefill, setQuickLogPrefill] = useState(null)
+  const [submitConfirmed, setSubmitConfirmed] = useState(false)
 
   const daysSinceBackup = settings.lastManualBackupDate
     ? differenceInDays(new Date(), parseISO(settings.lastManualBackupDate))
@@ -201,6 +202,13 @@ export default function Dashboard() {
   ]
   const staleDrafts = allDrafts.filter(item => differenceInDays(new Date(), parseISO(item.date)) >= 3)
   const showDraftNudge = staleDrafts.length >= 2
+
+  const submitAllDrafts = () => {
+    mileageClaims.filter(c => c.status === 'draft').forEach(c => updateMileageClaim(c.id, { status: 'submitted' }))
+    expenses.filter(e => e.status === 'draft').forEach(e => updateExpense(e.id, { status: 'submitted' }))
+    setSubmitConfirmed(true)
+    setTimeout(() => setSubmitConfirmed(false), 2000)
+  }
 
   const handleBackupNow = () => {
     exportBackup({ mileageClaims, expenses, vehicles, settings, favouriteJourneys })
@@ -249,19 +257,26 @@ export default function Dashboard() {
       {/* Draft nudge */}
       {showDraftNudge && (
         <div className="px-4 mb-3">
-          <button
-            onClick={() => navigate('/reports')}
-            className="w-full flex items-center gap-3 bg-brand-500/10 border border-brand-500/30 rounded-2xl px-4 py-3 active:scale-[0.99] transition-all"
-          >
+          <div className="w-full flex items-center gap-3 bg-brand-500/10 border border-brand-500/30 rounded-2xl px-4 py-3">
             <FileText size={16} className="text-brand-400 flex-shrink-0" />
             <div className="flex-1 text-left">
               <p className="text-xs font-semibold text-brand-400">
                 {staleDrafts.length} draft{staleDrafts.length !== 1 ? 's' : ''} ready to submit
               </p>
-              <p className="text-xs text-brand-400/70">Tap to review and export</p>
+              <p className="text-xs text-brand-400/70">Review or submit in one tap</p>
             </div>
-            <ArrowRight size={14} className="text-brand-400 flex-shrink-0" />
-          </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={submitAllDrafts}
+                className="text-xs font-semibold bg-brand-500 text-white rounded-lg px-2.5 py-1.5 active:scale-95 transition-all"
+              >
+                {submitConfirmed ? 'Done ✓' : 'Submit all'}
+              </button>
+              <button onClick={() => navigate('/reports')} className="text-brand-400">
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
